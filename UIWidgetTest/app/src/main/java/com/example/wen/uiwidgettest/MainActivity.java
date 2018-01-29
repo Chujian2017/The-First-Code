@@ -1,7 +1,10 @@
 package com.example.wen.uiwidgettest;
 
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -31,9 +34,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onClick(View view) {
             switch (view.getId()) {
                 case R.id.button:
-                    int progress=progressBar.getProgress();
-                    progress=progress+10;
-                    progressBar.setProgress(progress);
+                    ProgressDialog progressDialog=new ProgressDialog(MainActivity.this);
+                    progressDialog.setTitle("This is ProgressDialog");
+                    progressDialog.setMessage("Loading...");
+                    progressDialog.setCancelable(true);
+                    progressDialog.show();
                     break;
                 default:
                     break;

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.wen.databasetest">
+    package="com.example.wen.contactstest">
+    <uses-permission android:name="android.permission.READ_CONTACTS"></uses-permission>
 
     <application
         android:allowBackup="true"
@@ -16,12 +17,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <provider
-            android:name=".DatabaseProvider"
-            android:authorities="com.example.wen.databasetest.provider"
-            android:enabled="true"
-            android:exported="true"></provider>
     </application>
 
 </manifest>

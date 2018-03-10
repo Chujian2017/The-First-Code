@@ -1,11 +1,13 @@
-package com.example.wen.cameraalbumtest;
+package com.example.wen.yuedu;
 
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -16,33 +18,57 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.example.wen.yuedu.Base.BaseActivity;
+import com.example.wen.yuedu.SQL.MyDatabaseHelper;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.annotation.Target;
 
-public class MainActivity extends AppCompatActivity {
+import top.zibin.luban.Luban;
+import top.zibin.luban.OnCompressListener;
+
+public class AddActivity extends BaseActivity {
     public static final int TAKE_PHOTO = 1;
-
     public static final int CHOOSE_PHOTO = 2;
-
     private ImageView picture;
-
     private Uri imageUri;
+    Bitmap bitmap;
+
+    SQLiteDatabase db;
+    EditText inputBookName;
+    EditText inputBookNum;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_add);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            // Enable the Up button
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);}
         Button takePhoto = (Button) findViewById(R.id.take_photo);
-        Button chooseFromAlbum = (Button) findViewById(R.id.choose_from_album);
+        Button chooseFromAlbum = (Button) findViewById(R.id.add_image);
+        final Button insert=(Button)findViewById(R.id.insert);
+        inputBookName=(EditText) findViewById(R.id.input_name);
+        inputBookNum=(EditText) findViewById(R.id.input_num);
         picture = (ImageView) findViewById(R.id.picture);
         takePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 if (Build.VERSION.SDK_INT < 24) {
                     imageUri = Uri.fromFile(outputImage);
                 } else {
-                    imageUri = FileProvider.getUriForFile(MainActivity.this, "com.example.wen.cameraalbumtest.fileprovider", outputImage);
+                    imageUri = FileProvider.getUriForFile(AddActivity.this, "com.example.wen.yuedu.fileprovider", outputImage);
                 }
                 // 启动相机程序
                 Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
@@ -71,11 +97,18 @@ public class MainActivity extends AppCompatActivity {
         chooseFromAlbum.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{ Manifest.permission. WRITE_EXTERNAL_STORAGE }, 1);
+                if (ContextCompat.checkSelfPermission(AddActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(AddActivity.this, new String[]{ Manifest.permission. WRITE_EXTERNAL_STORAGE }, 1);
                 } else {
                     openAlbum();
                 }
+            }
+        });
+        insert.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                insert(bitmap);
+                Toast.makeText(view.getContext(),"添加书籍成功",Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -107,7 +140,9 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == RESULT_OK) {
                     try {
                         // 将拍摄的照片显示出来
-                        Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
+                        bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
+                        String path=imageUri.getPath();
+                        compressWithLS(path);
                         picture.setImageBitmap(bitmap);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -135,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
     private void handleImageOnKitKat(Intent data) {
         String imagePath = null;
         Uri uri = data.getData();
-        //Log.d("TAG", "handleImageOnKitKat: uri is " + uri);
+        Log.d("TAG", "handleImageOnKitKat: uri is " + uri);
         if (DocumentsContract.isDocumentUri(this, uri)) {
             // 如果是document类型的Uri，则通过document id处理
             String docId = DocumentsContract.getDocumentId(uri);
@@ -178,11 +213,51 @@ public class MainActivity extends AppCompatActivity {
 
     private void displayImage(String imagePath) {
         if (imagePath != null) {
-            Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+            compressWithLS(imagePath);
+            bitmap = BitmapFactory.decodeFile(imagePath);
             picture.setImageBitmap(bitmap);
         } else {
             Toast.makeText(this, "failed to get image", Toast.LENGTH_SHORT).show();
         }
     }
+    private void compressWithLS(String Path){
+        Luban.with(AddActivity.this)
+                .load(Path)// 传人要压缩的图片的储存路径
+                .ignoreBy(100)// 忽略不压缩图片的大小
+                .setTargetDir(getFilesDir().getPath())  // 设置压缩后文件存储位置
+                .setCompressListener(new OnCompressListener() { //设置回调
+                    @Override
+                    public void onStart() {
+                        // TODO 压缩开始前调用，可以在方法内启动 loading UI
+                    }
+                    @Override
+                    public void onSuccess(File file) {
+                        Log.d("AddActivity", "onSuccess");
+                        // TODO 压缩成功后调用，返回压缩后的图片文件
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                        // TODO 当压缩过程出现问题时调用
+                    }
+                }).launch();    //启动压缩
+
+    }
+    private void insert(Bitmap bitmap){
+        MyDatabaseHelper dHelper;
+        ContentValues values;
+        values=new ContentValues();
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        dHelper=new MyDatabaseHelper(this,"BookStore.db",null,1);
+        SQLiteDatabase db=dHelper.getWritableDatabase();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
+        values.put("image",os.toByteArray());
+        values.put("bookName",inputBookName.getText().toString());
+        String number=inputBookNum.getText().toString();
+        int num=Integer.parseInt(number);
+        values.put("bookNum",num);
+        db.insert("Book",null,values);
+    }
+
+
 
 }

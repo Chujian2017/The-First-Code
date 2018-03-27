@@ -1,4 +1,4 @@
-package com.example.wen.yuedu.Base;
+package com.example.wen.yuedu.base;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -30,11 +30,11 @@ public class BaseActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-    @Override
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.search, menu);
         return super.onCreateOptionsMenu(menu);
-    }
+    }*/
     public void addToolBar(){
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);

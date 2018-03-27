@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_search"
-        android:title="search"
+        android:title="问题反馈"
         android:icon="@android:drawable/ic_menu_search"
         app:showAsAction="collapseActionView"/>
 </menu>
